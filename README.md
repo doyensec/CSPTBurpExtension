@@ -29,10 +29,10 @@ This tab is the core of the extension.
 
 #### :crossed_swords:  Understanding the scan results
 
-- The reflected values are on the left. Click on it to see the associated sources and the potential sinks.
+- The reflected values are on the left. Click one to see the associated sources and the potential sinks.
 - To confirm it is not a false positive, you can right-click on a source and use the "Copy URL With Canary" feature. Then copy this URL inside your browser. If this URL triggers a request with the canary token inside the path, it means that a CSPT is present and an issue will be created.
-- Instead of testing all the source one-by-one, you can use the "Export Sources With Canary". It will copy all potential sources with canary. Then you just need to open all the links with your browser (some browser extensions are able to do that).
-- You can also regenerate a new canary token or modify it.
+- Instead of testing all the sources one-by-one, you can use the "Export Sources With Canary". It will copy all potential sources with canaries. Then you just need to open all the links with your browser (some browser extensions are able to do that).
+- You can also modify or regenerate a new canary token.
 - In case some results are false positives, you can discard them. They will not be displayed in the next scan.
 
 #### :crossed_swords:  Finding sinks
@@ -41,22 +41,21 @@ If you have identified a CSPT, you will want to find exploitable sinks. The exte
 Note: Now that [Bambdas](https://portswigger.net/blog/introducing-bambdas) are implemented in Burp Proxy, this may be a more convenient way to find sinks.
 
 ### :memo: False Positives List
-- To discard false positives, you just need to right-click on a source and set Parameter or URL as a false positive.
-- The "False Positive List" summarizes all defined rules and can be modify.
+- To discard false positives, you just need to right-click on a source and set either the Parameter or URL as a false positive.
+- The "False Positive List" summarizes all defined rules and can be modified.
   
 # :arrow_down: Installation
 To successfully install the CSPT extension, ensure you meet the following requirements:
 
 Burp:
-- Support is only provided for the most recent version of Burp.
-- Compatible with both "Professional" and "Community" editions.
+- Most recent version of "Professional" or "Community" (older versions not supported).
 
 Java:
 - The Montoya API needs Java 17 or later.
 
 # :computer: Building the CSPT extension from git
 
-1. Install Java 17+, for example in Debian-based distros:
+1. Install Java 17+. For example, in Debian-based distros:
 
 ```bash
 $ sudo apt install -y openjdk-17-jdk
@@ -64,7 +63,7 @@ $ java --version
 openjdk 17.0.6 2023-01-17
 ```
 
-1. Clone the repo:
+2. Clone the repo:
 
 ```bash
 $ git clone https://github.com/doyensec/CSPTBurpExtension
@@ -83,7 +82,7 @@ Load the file `build/CSPTBurpExtension.jar` into Burp as a Java extension.
 
 CSPT Burp Extension thrives on community contributions. Whether you're a developer, researcher, designer, or bug hunter, your expertise is invaluable to us. We welcome bug reports, feedback, and pull requests. Your participation helps us continue to improve the extension, making it a stronger tool for the community.
 
-Interactions are best carried out through the Github issue tracker, but you can also reach us on social media ([@Doyensec](https://twitter.com/Doyensec)). We look forward to hearing from you!
+Interactions are best carried out through the GitHub issue tracker, but you can also reach us on social media ([@Doyensec](https://twitter.com/Doyensec)). We look forward to hearing from you!
 
 # :busts_in_silhouette: Contributors
 
