@@ -27,7 +27,7 @@ This tab is the core of the extension.
 3. Check the sink HTTP methods you want to search
 4. Click on Scan
 
-#### :crossed_swords:  Understanding the scan result
+#### :crossed_swords:  Understanding the scan results
 
 - The reflected values are on the left. Click on it to see the associated sources and the potential sinks.
 - To confirm it is not a false positive, you can right-click on a source and use the "Copy URL With Canary" feature. Then copy this URL inside your browser. If this URL triggers a request with the canary token inside the path, it means that a CSPT is present and an issue will be created.
