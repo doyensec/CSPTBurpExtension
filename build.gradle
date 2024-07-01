@@ -22,6 +22,7 @@ jar {
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
+    destinationDirectory.set(file("$buildDir/"))
 }
 
 
@@ -38,7 +39,7 @@ publishing {
     }
     publications {
         gpr(MavenPublication) {
-            artifact './build/libs/CSPTBurpExtension.jar'
+            artifact './build/CSPTBurpExtension.jar'
         }
     }
 }
