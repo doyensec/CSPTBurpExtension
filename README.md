@@ -80,11 +80,11 @@ Load the file `build/CSPTBurpExtension.jar` into Burp as a Java extension.
 
 # :scroll: Developing
 
-The CSPT Burp Extension uses IntelliJ Forms for its UI. The `.form` files contain the actual UI layouts, while the associated `.java` files are auto-generated and should not be modified directly, as all modifications are lost at compile time.
+The CSPT Burp Extension uses IntelliJ Forms for its UI. The `.form` files contain the actual UI layouts, while the associated `.java` files are partially auto-generated and the UI methods should not be modified directly, as all modifications are lost at compile time.
 
-:warning: `./gradlew build` will automatically compile the application using the `.form` files, but it will **not** generate corresponding updated `.java` files – they will just be ignored.
+:warning: If the `.form` files change, `./gradlew build` will internally generate updated `.java` file for the compilation, but it will not update the source `.java` files in the repository.
 
-While developing, to make sure IntelliJ IDEA generates updated `.java` files at compile time, set it as follows:
+While developing, to make sure IntelliJ IDEA generates updated `.java` files, set it as follows:
 - Go to `Settings` > `Build, Execution, Deployment` > `Build Tools` > `Gradle` and set `Buiild and run using:` to `IntelliJ IDEA`
 - Go to `Settings` > `Editor` > `GUI Designer` and set `Generate GUI into:` to `Java source code`
 
