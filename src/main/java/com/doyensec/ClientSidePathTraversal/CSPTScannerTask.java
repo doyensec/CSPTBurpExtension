@@ -4,7 +4,7 @@ import javax.swing.SwingWorker;
 
 public class CSPTScannerTask extends SwingWorker<String, Object> {
     private ClientSidePathTraversal cspt = null;
-    private ClientSitePathTraversalForm csptForm = null;
+    private ClientSidePathTraversalForm csptForm = null;
 
     int scanProxyTotal = 0;
     int scanProxyCurrent = 0;

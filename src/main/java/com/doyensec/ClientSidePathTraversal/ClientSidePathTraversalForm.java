@@ -38,7 +38,7 @@ import javax.swing.table.DefaultTableModel;
 
 import burp.api.montoya.http.message.requests.HttpRequest;
 
-public class ClientSitePathTraversalForm {
+public class ClientSidePathTraversalForm {
     private JPanel panel1;
     private JButton scanButton;
     private JTable resultSourceTable;
@@ -61,7 +61,7 @@ public class ClientSitePathTraversalForm {
     private JProgressBar progressBarSource;
     private JProgressBar progressBarReflection;
 
-    public ClientSitePathTraversalForm(ClientSidePathTraversal cspt) {
+    public ClientSidePathTraversalForm(ClientSidePathTraversal cspt) {
 
         $$$setupUI$$$();
         scanButton.addActionListener(new ActionListener() {

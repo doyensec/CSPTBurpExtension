@@ -23,9 +23,9 @@ public class ClientSidePathTraversal implements BurpExtension {
 
     private final String version = "1";
 
-    private ClientSitePathTraversalForm csptForm;
+    private ClientSidePathTraversalForm csptForm;
 
-    ClientSitePathTraversalForm listener = null;
+    ClientSidePathTraversalForm listener = null;
     private FalsePositivesForm falsePositivesForm;
     private MontoyaApi api;
 
@@ -43,7 +43,7 @@ public class ClientSidePathTraversal implements BurpExtension {
 
     private Map<String, Set<PotentialSink>> pathLookup;
 
-    public ClientSitePathTraversalForm getCsptForm() {
+    public ClientSidePathTraversalForm getCsptForm() {
         return csptForm;
     }
 
@@ -179,7 +179,7 @@ public class ClientSidePathTraversal implements BurpExtension {
 
         loadData();
 
-        csptForm = new ClientSitePathTraversalForm(this);
+        csptForm = new ClientSidePathTraversalForm(this);
 
         falsePositivesForm = new FalsePositivesForm(this);
         JTabbedPane tabPane = new JTabbedPane();
