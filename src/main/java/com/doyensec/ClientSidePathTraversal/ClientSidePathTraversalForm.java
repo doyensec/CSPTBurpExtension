@@ -5,8 +5,6 @@ import java.awt.Dimension;
 import java.awt.Insets;
 import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
@@ -14,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
@@ -32,8 +29,6 @@ import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.border.TitledBorder;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 
 import burp.api.montoya.http.message.requests.HttpRequest;
@@ -48,7 +43,7 @@ public class ClientSidePathTraversalForm {
     private JTextField sourceScope;
     private JTextField sinkScope;
     private JTable resultSinkTable;
-    private JList resultsList;
+    private JList<String> resultsList;
     private JPanel sinkOption;
     private JCheckBox POSTCheckBox;
     private JCheckBox DELETECheckBox;
@@ -66,43 +61,27 @@ public class ClientSidePathTraversalForm {
     public ClientSidePathTraversalForm(ClientSidePathTraversal cspt) {
 
         $$$setupUI$$$();
-        scanButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
+        scanButton.addActionListener(e -> {
+            // Save Storage
+            saveConfiguration(cspt);
+            progressBarSource.setValue(0);
 
-                // Save Storage
-                saveConfiguration(cspt);
-                progressBarSource.setValue(0);
-
-                CSPTScannerTask csptScannerTask = new CSPTScannerTask(cspt);
-                csptScannerTask.execute();
-
-            }
-        });
-        exportSourcesWithCanaryButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                List<String> sourceWithCanary = cspt.getAllSourcesWithCanary();
-                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(
-                        new StringSelection(sourceWithCanary.stream().collect(Collectors.joining("\n"))), null);
-            }
+            CSPTScannerTask csptScannerTask = new CSPTScannerTask(cspt);
+            csptScannerTask.execute();
         });
 
-        generateNewCanaryValueButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                cspt.setCanary(cspt.generateCanaryToken());
-                canaryTokenValue.setText(cspt.getCanary());
-            }
+        exportSourcesWithCanaryButton.addActionListener(e -> {
+            List<String> sourceWithCanary = cspt.getAllSourcesWithCanary();
+            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(
+                    new StringSelection(String.join("\n", sourceWithCanary)), null);
         });
 
-        copyCanaryValueButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(cspt.getCanary()),
-                        null);
-            }
+        generateNewCanaryValueButton.addActionListener(e -> {
+            cspt.setCanary(cspt.generateCanaryToken());
+            canaryTokenValue.setText(cspt.getCanary());
         });
+
+        copyCanaryValueButton.addActionListener(e -> Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(cspt.getCanary()), null));
 
         loadConfiguration(cspt);
 
@@ -115,7 +94,7 @@ public class ClientSidePathTraversalForm {
         cspt.setSourceScope(sourceScope.getText());
         cspt.setSinkScope(sinkScope.getText());
 
-        List<String> sinkHTTPMethods = new ArrayList<String>();
+        List<String> sinkHTTPMethods = new ArrayList<>();
 
         if (POSTCheckBox.isSelected()) {
             sinkHTTPMethods.add(POSTCheckBox.getText());
@@ -178,21 +157,11 @@ public class ClientSidePathTraversalForm {
 
         for (String httpMethod : cspt.getSinkHTTPMethods()) {
             switch (httpMethod) {
-                case "POST":
-                    POSTCheckBox.setSelected(true);
-                    break;
-                case "PUT":
-                    PUTCheckBox.setSelected(true);
-                    break;
-                case "PATCH":
-                    PATCHCheckBox.setSelected(true);
-                    break;
-                case "DELETE":
-                    DELETECheckBox.setSelected(true);
-                    break;
-                case "GET":
-                    GETCheckBox.setSelected(true);
-                    break;
+                case "POST" -> POSTCheckBox.setSelected(true);
+                case "PUT" -> PUTCheckBox.setSelected(true);
+                case "PATCH" -> PATCHCheckBox.setSelected(true);
+                case "DELETE" -> DELETECheckBox.setSelected(true);
+                case "GET" -> GETCheckBox.setSelected(true);
             }
 
         }
@@ -202,7 +171,7 @@ public class ClientSidePathTraversalForm {
     public void displayResults(Map<String, Set<PotentialSource>> paramValueLookup,
                                Map<String, Set<PotentialSink>> pathLookup, ClientSidePathTraversal cspt) {
 
-        DefaultListModel resultsListModel = new DefaultListModel();
+        DefaultListModel<String> resultsListModel = new DefaultListModel<>();
 
         for (String paramValue : pathLookup.keySet()) {
             resultsListModel.addElement(paramValue);
@@ -214,18 +183,12 @@ public class ClientSidePathTraversalForm {
 
         resultsList.setModel(resultsListModel);
 
-        resultsList.addListSelectionListener(new ListSelectionListener() {
-
-            @Override
-            public void valueChanged(ListSelectionEvent e) {
-                if (!e.getValueIsAdjusting()) {
-                    displaySourcesAndSinks(paramValueLookup, pathLookup, resultsList.getSelectedValue().toString());
-                    createContextualMenusSources(cspt);
-                    createContextualMenusSinks(cspt);
-
-                }
+        resultsList.addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                displaySourcesAndSinks(paramValueLookup, pathLookup, resultsList.getSelectedValue());
+                createContextualMenusSources(cspt);
+                createContextualMenusSinks(cspt);
             }
-
         });
     }
 
@@ -292,20 +255,16 @@ public class ClientSidePathTraversalForm {
 
             }
         });
-        findLaxSinks.addActionListener(new ActionListener() {
+        findLaxSinks.addActionListener(e -> {
+            Component c = (Component) e.getSource();
+            JPopupMenu popup = (JPopupMenu) c.getParent();
+            JTable table = (JTable) popup.getInvoker();
 
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                Component c = (Component) e.getSource();
-                JPopupMenu popup = (JPopupMenu) c.getParent();
-                JTable table = (JTable) popup.getInvoker();
+            String method = table.getValueAt(table.getSelectedRow(), 0).toString();
+            String url = table.getValueAt(table.getSelectedRow(), 1).toString();
 
-                String method = table.getValueAt(table.getSelectedRow(), 0).toString();
-                String url = table.getValueAt(table.getSelectedRow(), 1).toString();
-
-                // Send sinks to the organizer
-                cspt.getExploitableSink(method, HttpRequest.httpRequestFromUrl(url).httpService().host());
-            }
+            // Send sinks to the organizer
+            cspt.getExploitableSink(method, HttpRequest.httpRequestFromUrl(url).httpService().host());
         });
         popupMenuSinkTable.add(findLaxSinks);
         resultSinkTable.setComponentPopupMenu(popupMenuSinkTable);
@@ -339,60 +298,43 @@ public class ClientSidePathTraversalForm {
             }
         });
 
-        copyURLWithCanary.addActionListener(new ActionListener() {
+        copyURLWithCanary.addActionListener(e -> {
+            Component c = (Component) e.getSource();
+            JPopupMenu popup = (JPopupMenu) c.getParent();
+            JTable table = (JTable) popup.getInvoker();
 
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                Component c = (Component) e.getSource();
-                JPopupMenu popup = (JPopupMenu) c.getParent();
-                JTable table = (JTable) popup.getInvoker();
+            String url = table.getValueAt(table.getSelectedRow(), 1).toString();
+            String param = table.getValueAt(table.getSelectedRow(), 0).toString();
+            String urlWithCanary = cspt.replaceParamWithCanary(param, url);
 
-                String url = table.getValueAt(table.getSelectedRow(), 1).toString();
-                String param = table.getValueAt(table.getSelectedRow(), 0).toString();
-                String urlWithCanary = cspt.replaceParamWithCanary(param, url);
-
-                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(urlWithCanary), null);
-
-            }
+            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(urlWithCanary), null);
         });
         popupMenu.add(copyURLWithCanary);
 
-        copyURL.addActionListener(new ActionListener() {
+        copyURL.addActionListener(e -> {
+            Component c = (Component) e.getSource();
+            JPopupMenu popup = (JPopupMenu) c.getParent();
+            JTable table = (JTable) popup.getInvoker();
 
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                Component c = (Component) e.getSource();
-                JPopupMenu popup = (JPopupMenu) c.getParent();
-                JTable table = (JTable) popup.getInvoker();
-
-                String url = table.getValueAt(table.getSelectedRow(), 1).toString();
-                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(url), null);
-            }
+            String url = table.getValueAt(table.getSelectedRow(), 1).toString();
+            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(url), null);
         });
         popupMenu.add(copyURL);
 
-        falsePositiveParam.addActionListener(new ActionListener() {
-
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                Component c = (Component) e.getSource();
-                JPopupMenu popup = (JPopupMenu) c.getParent();
-                JTable table = (JTable) popup.getInvoker();
-                cspt.addFalsePositive(table.getValueAt(table.getSelectedRow(), 0).toString(), ".*");
-            }
+        falsePositiveParam.addActionListener(e -> {
+            Component c = (Component) e.getSource();
+            JPopupMenu popup = (JPopupMenu) c.getParent();
+            JTable table = (JTable) popup.getInvoker();
+            cspt.addFalsePositive(table.getValueAt(table.getSelectedRow(), 0).toString(), ".*");
         });
         popupMenu.add(falsePositiveParam);
 
-        falsePositiveParamURL.addActionListener(new ActionListener() {
-
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                Component c = (Component) e.getSource();
-                JPopupMenu popup = (JPopupMenu) c.getParent();
-                JTable table = (JTable) popup.getInvoker();
-                cspt.addFalsePositive(table.getValueAt(table.getSelectedRow(), 0).toString(),
-                        Pattern.quote(table.getValueAt(table.getSelectedRow(), 1).toString()));
-            }
+        falsePositiveParamURL.addActionListener(e -> {
+            Component c = (Component) e.getSource();
+            JPopupMenu popup = (JPopupMenu) c.getParent();
+            JTable table = (JTable) popup.getInvoker();
+            cspt.addFalsePositive(table.getValueAt(table.getSelectedRow(), 0).toString(),
+                    Pattern.quote(table.getValueAt(table.getSelectedRow(), 1).toString()));
         });
         popupMenu.add(falsePositiveParamURL);
         resultSourceTable.setComponentPopupMenu(popupMenu);
@@ -425,10 +367,10 @@ public class ClientSidePathTraversalForm {
         sinkScope.setText(".*");
         scanOption.add(sinkScope, new GridConstraints(1, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
         final JLabel label1 = new JLabel();
-        label1.setText("Source scope (Regexp)");
+        label1.setText("Source scope (RegExp)");
         scanOption.add(label1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JLabel label2 = new JLabel();
-        label2.setText("Sink scope (Regexp)");
+        label2.setText("Sink scope (RegExp)");
         scanOption.add(label2, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         sinkOption = new JPanel();
         sinkOption.setLayout(new GridLayoutManager(3, 2, new Insets(0, 0, 0, 0), -1, -1));
