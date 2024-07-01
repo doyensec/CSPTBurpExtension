@@ -88,6 +88,8 @@ While developing, to make sure IntelliJ IDEA generates updated `.java` files at 
 - Go to `Settings` > `Build, Execution, Deployment` > `Build Tools` > `Gradle` and set `Buiild and run using:` to `IntelliJ IDEA`
 - Go to `Settings` > `Editor` > `GUI Designer` and set `Generate GUI into:` to `Java source code`
 
+After editing a form, if the Java file is not generated automatically, click on `Build` > `Recompile <file>.form` while in form editor.
+
 # :handshake: Contributing
 
 CSPT Burp Extension thrives on community contributions. Whether you're a developer, researcher, designer, or bug hunter, your expertise is invaluable to us. We welcome bug reports, feedback, and pull requests. Your participation helps us continue to improve the extension, making it a stronger tool for the community.
