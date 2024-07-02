@@ -38,19 +38,23 @@ public class ClientSidePathTraversalPassiveScan implements ScanCheck {
     public AuditResult passiveAudit(HttpRequestResponse baseRequestResponse) {
         List<AuditIssue> auditIssueList = emptyList();
 
-        String pathWithParam = baseRequestResponse.request().path();
-        if (baseRequestResponse.request().path().indexOf('?') != -1) {
-            pathWithParam = baseRequestResponse.request().path().substring(0,
-                    baseRequestResponse.request().path().indexOf('?'));
-        }
+        String path = baseRequestResponse.request().pathWithoutQuery().toLowerCase();
 
-        if (pathWithParam.toLowerCase().contains(cspt.getCanary().toLowerCase())) {
-            auditIssueList = singletonList(auditIssue("Potential Client-Side Path Traversal",
-                    "The PATH " + baseRequestResponse.request().path().toLowerCase() + " contains the canary: "
-                            + cspt.getCanary(),
-                    null, baseRequestResponse.request().url(), AuditIssueSeverity.MEDIUM,
-                    AuditIssueConfidence.FIRM, null, null, AuditIssueSeverity.MEDIUM, baseRequestResponse));
-
+        if (path.contains(cspt.getCanary().toLowerCase())) {
+            auditIssueList = singletonList(
+                    auditIssue(
+                            "Potential Client-Side Path Traversal",
+                            "The PATH " + path + " contains the canary: "+ cspt.getCanary(),
+                            null,
+                            baseRequestResponse.request().url(),
+                            AuditIssueSeverity.MEDIUM,
+                            AuditIssueConfidence.FIRM,
+                            null,
+                            null,
+                            AuditIssueSeverity.MEDIUM,
+                            baseRequestResponse
+                    )
+            );
         }
         return auditResult(auditIssueList);
     }

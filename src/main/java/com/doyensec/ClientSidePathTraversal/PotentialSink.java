@@ -3,9 +3,8 @@ package com.doyensec.ClientSidePathTraversal;
 import java.util.Objects;
 
 public class PotentialSink {
-
-    String url;
-    String method;
+    final String url;
+    final String method;
 
     public PotentialSink(String method, String url) {
         this.url = url;

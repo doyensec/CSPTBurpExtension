@@ -3,10 +3,9 @@ package com.doyensec.ClientSidePathTraversal;
 import java.util.Objects;
 
 public class PotentialSource {
-
-    String paramName;
-    String paramValue;
-    String sourceURL;
+    final String paramName;
+    final String paramValue;
+    final String sourceURL;
 
     public PotentialSource(String paramName, String paramValue, String sourceURL) {
         this.paramName = paramName;

@@ -1,8 +1,6 @@
 package com.doyensec.ClientSidePathTraversal;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import burp.api.montoya.MontoyaApi;
@@ -15,41 +13,29 @@ import burp.api.montoya.proxy.ProxyHttpRequestResponse;
 
 public class ProxyFilterPotentialSource implements ProxyHistoryFilter {
 
-    MontoyaApi api;
-    Pattern scope;
-
-    int currentScan = 0;
-    int lastScanUpdate = 0;
-    ClientSidePathTraversal cspt;
-    CSPTScannerTask csptScannerTask;
-
-    private Map<String, Set<PotentialSource>> paramValueLookup;
-
-    public ProxyFilterPotentialSource(MontoyaApi api, ClientSidePathTraversal cspt, CSPTScannerTask csptScannerTask) {
-        this.api = api;
-        this.cspt = cspt;
-
-        this.scope = Pattern.compile(cspt.getSourceScope(), Pattern.CASE_INSENSITIVE);
-
-        paramValueLookup = new HashMap<>();
-        this.csptScannerTask = csptScannerTask;
-        this.currentScan = 0;
-        this.lastScanUpdate = 0;
-
-    }
-
+    private Pattern scope;
+    private int currentScan;
+    private ClientSidePathTraversal cspt;
+    private CSPTScannerTask csptScannerTask;
+    private Map<String, Set<PotentialSource>> paramValueLookup = new HashMap<>();
     public Map<String, Set<PotentialSource>> getParamValueLookup() {
         return paramValueLookup;
     }
 
+    public ProxyFilterPotentialSource(ClientSidePathTraversal cspt, CSPTScannerTask csptScannerTask) {
+        this.cspt = cspt;
+        this.scope = Pattern.compile(cspt.getSourceScope(), Pattern.CASE_INSENSITIVE);
+
+        this.csptScannerTask = csptScannerTask;
+        this.currentScan = 0;
+    }
+
     @Override
     public boolean matches(ProxyHttpRequestResponse requestResponse) {
+        if (this.csptScannerTask.isCancelled()) return false;
 
-        this.currentScan = this.currentScan + 1;
-
-        if (lastScanUpdate + 100 < currentScan) {
-            lastScanUpdate = currentScan;
-
+        // Update the percent every 100 requests
+        if (currentScan++ % 100 == 0) {
             csptScannerTask.updateProgressSource(this.currentScan);
         }
 
@@ -60,7 +46,7 @@ public class ProxyFilterPotentialSource implements ProxyHistoryFilter {
         }
 
         // Avoid 4XX and 5XX page but we want to keep 3XX
-        if (httpResponse.statusCode() > 400) {
+        if (httpResponse.statusCode() >= 400) {
             return false;
         }
 
@@ -76,26 +62,21 @@ public class ProxyFilterPotentialSource implements ProxyHistoryFilter {
             return false;
         }
 
-        // Must match the soruce scope
-        if (!this.scope.matcher(httpRequest.url().toString()).find()) {
+        // Must match the source scope
+        if (!this.scope.matcher(httpRequest.url()).find()) {
             return false;
         }
 
-        boolean fitlered = false;
-        for (ParsedHttpParameter params : httpRequest.parameters()) {
+        boolean valid = false;
+        for (ParsedHttpParameter params : httpRequest.parameters(HttpParameterType.URL)) {
+            PotentialSource ptSource = new PotentialSource(params.name(), params.value().toLowerCase(), httpRequest.url());
 
-            // At least one Query Parameter
-            if (params.type() == HttpParameterType.URL) {
-
-                // Add new source to list if it is not a false positive
-                if (cspt.addNewSource(params.name(), params.value().toLowerCase(), httpRequest.url())) {
-                    fitlered = true;
-                }
-
+            if (!this.cspt.checkIfFalsePositive(ptSource)) {
+                valid = true;
+                this.paramValueLookup.computeIfAbsent(ptSource.paramValue, x -> new HashSet<>()).add(ptSource);
             }
         }
 
-        return fitlered;
+        return valid;
     }
-
 }

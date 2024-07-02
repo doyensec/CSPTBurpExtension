@@ -14,9 +14,8 @@ import burp.api.montoya.proxy.ProxyHttpRequestResponse;
 
 public class ProxyFilterPotentialSink implements ProxyHistoryFilter {
     private final Pattern scope;
-    Map<String, Set<PotentialSource>> paramValueLookup;
-    int currentScan = 0;
-    int lastScanUpdate = 0;
+    final Map<String, Set<PotentialSource>> paramValueLookup;
+    int currentScan;
     private List<String> sinkHTTPMethods;
 
     ClientSidePathTraversal cspt;
@@ -25,17 +24,15 @@ public class ProxyFilterPotentialSink implements ProxyHistoryFilter {
     private Map<String, Set<PotentialSink>> pathLookup;
     MontoyaApi api;
 
-    public ProxyFilterPotentialSink(MontoyaApi api, ClientSidePathTraversal cspt, CSPTScannerTask csptScannerTask,
-            String scope, List<String> sinkHTTPMethods, Map<String, Set<PotentialSource>> paramValueLookup) {
-        this.api = api;
-        this.paramValueLookup = paramValueLookup;
-        this.pathLookup = new HashMap<String, Set<PotentialSink>>();
-        this.sinkHTTPMethods = sinkHTTPMethods;
-        this.scope = Pattern.compile(scope, Pattern.CASE_INSENSITIVE);
+    public ProxyFilterPotentialSink(ClientSidePathTraversal cspt, CSPTScannerTask csptScannerTask) {
+        this.api = cspt.getApi();
+        this.paramValueLookup = csptScannerTask.getParamValueLookup();
+        this.pathLookup = new HashMap<>();
+        this.sinkHTTPMethods = cspt.getSinkHTTPMethods();
+        this.scope = Pattern.compile(cspt.getSinkScope(), Pattern.CASE_INSENSITIVE);
         this.cspt = cspt;
         this.csptScannerTask = csptScannerTask;
         this.currentScan = 0;
-        this.lastScanUpdate = 0;
     }
 
     public Map<String, Set<PotentialSink>> getPathLookup() {
@@ -43,15 +40,15 @@ public class ProxyFilterPotentialSink implements ProxyHistoryFilter {
     }
 
     /* 
-     This method implements the logic to find sink.
-     It looks for reflection*/
+     This method implements the logic to find sinks.
+     It looks for reflection.
+     */
     @Override
     public boolean matches(ProxyHttpRequestResponse requestResponse) {
-        currentScan = currentScan + 1;
+        if (this.csptScannerTask.isCancelled()) return false;
 
-        if (lastScanUpdate + 100 < currentScan) {
-            lastScanUpdate = currentScan;
-
+        // Update the percent every 100 requests
+        if (currentScan++ % 100 == 0) {
             csptScannerTask.updateProgressReflection(this.currentScan);
         }
 
@@ -67,29 +64,19 @@ public class ProxyFilterPotentialSink implements ProxyHistoryFilter {
         }
 
         // Check reflection in path
-        String[] pathParams = httpRequest.pathWithoutQuery().split("/");
-
         // For each URI param check if value correspond to path param
-        for (String pathParam : pathParams) {
-
+        // TODO: check if pathWithoutQuery here is correct
+        for (String pathParam : httpRequest.pathWithoutQuery().split("/")) {
             // We check reflection in lower case, we don't check for a transformed value
             if (!pathParam.isEmpty() && paramValueLookup.containsKey(pathParam.toLowerCase())) {
-
-                api.logging().logToOutput(
-                        httpRequest.method() + ";" + pathParam.toLowerCase() + " found in " + httpRequest.url());
+                api.logging().logToOutput(httpRequest.method() + ";" + pathParam.toLowerCase() + " found in " + httpRequest.url());
 
                 pathLookup
-                        .computeIfAbsent(pathParam.toLowerCase(),
-                                (x -> (Set<PotentialSink>) new HashSet<PotentialSink>()))
+                        .computeIfAbsent(pathParam.toLowerCase(), x -> new HashSet<>())
                         .add(new PotentialSink(httpRequest.method(), httpRequest.url()));
-
                 return true;
             }
-
         }
-
         return false;
-
     }
-
 }
