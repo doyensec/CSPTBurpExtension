@@ -10,21 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import javax.swing.BorderFactory;
-import javax.swing.DefaultListModel;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JMenuItem;
-import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
-import javax.swing.JProgressBar;
-import javax.swing.JScrollPane;
-import javax.swing.JSplitPane;
-import javax.swing.JTable;
-import javax.swing.JTextField;
+import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 
@@ -157,7 +143,9 @@ public class ClientSidePathTraversalForm {
     }
 
     public void setProgressSource(int percent) {
-        progressBarSource.setValue(percent);
+        SwingUtilities.invokeLater(() -> {
+            progressBarSource.setValue(percent);
+        });
     }
 
     public void initProgressSource() {
@@ -165,8 +153,10 @@ public class ClientSidePathTraversalForm {
     }
 
     public void finishProgressSource() {
-        progressBarSource.setIndeterminate(false);
-        progressBarSource.setValue(100);
+        SwingUtilities.invokeLater(() -> {
+            progressBarSource.setIndeterminate(false);
+            progressBarSource.setValue(100);
+        });
     }
 
     public void setProgressReflection(int percent) {

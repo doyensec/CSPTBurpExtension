@@ -5,8 +5,6 @@ import com.intellij.uiDesigner.core.GridLayoutManager;
 
 import java.awt.Component;
 import java.awt.Insets;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Map;
@@ -24,16 +22,18 @@ public class FalsePositivesForm {
     private JPanel contentPanel;
     private JTable falsePositivesTable;
     private final DefaultTableModel model = new DefaultTableModel(new String[]{"Param Name", "URL (RegExp)"}, 0);
+    private final ClientSidePathTraversal cspt;
 
     public FalsePositivesForm(ClientSidePathTraversal cspt) {
         $$$setupUI$$$();
+        this.cspt = cspt;
         falsePositivesTable.setModel(model);
         createContextualMenus(cspt);
-        display(cspt);
+        refresh();
     }
 
-    public void display(ClientSidePathTraversal cspt) {
-        displayTable(cspt.getFalsePositivesList());
+    public void refresh() {
+        displayTable(this.cspt.getFalsePositivesList());
     }
 
     private void displayTable(Map<String, Set<String>> falsePositivesList) {

@@ -84,6 +84,7 @@ public class ClientSidePathTraversal implements BurpExtension {
 
         csptForm = new ClientSidePathTraversalForm(this);
         falsePositivesForm = new FalsePositivesForm(this);
+
         JTabbedPane tabPane = new JTabbedPane();
         tabPane.addTab("CSPT", csptForm.$$$getRootComponent$$$());
         tabPane.addTab("False Positives List", falsePositivesForm.$$$getRootComponent$$$());
@@ -98,7 +99,7 @@ public class ClientSidePathTraversal implements BurpExtension {
 
     public void addFalsePositive(String getParameterName, String urlRegexp) {
         falsePositivesList.computeIfAbsent(getParameterName, x -> new HashSet<>()).add(urlRegexp);
-        falsePositivesForm.display(this);
+        falsePositivesForm.refresh();
     }
 
     public void removeFalsePositive(String getParameterName, String urlRegexp) {
@@ -111,7 +112,7 @@ public class ClientSidePathTraversal implements BurpExtension {
             falsePositivesList.remove(getParameterName);
         }
 
-        falsePositivesForm.display(this);
+        falsePositivesForm.refresh();
     }
 
     public boolean checkIfFalsePositive(PotentialSource ptSource) {
@@ -197,7 +198,8 @@ public class ClientSidePathTraversal implements BurpExtension {
         if (falsePositiveParam != null && falsePositiveURL != null
                 && falsePositiveParam.size() == falsePositiveURL.size()) {
             for (int i = 0; i < falsePositiveParam.size(); i++) {
-                addFalsePositive(falsePositiveParam.get(i), falsePositiveURL.get(i));
+                // Do not use "addFalsePositive" here as the false positive form is not initialized yet at this point in time
+                falsePositivesList.computeIfAbsent(falsePositiveParam.get(i), x -> new HashSet<>()).add(falsePositiveURL.get(i));
             }
         }
 

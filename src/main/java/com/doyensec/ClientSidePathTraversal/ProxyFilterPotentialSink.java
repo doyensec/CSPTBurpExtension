@@ -47,7 +47,7 @@ public class ProxyFilterPotentialSink implements ProxyHistoryFilter {
     public boolean matches(ProxyHttpRequestResponse requestResponse) {
         // Update the percent every 100 requests
         if (currentScan++ % 100 == 0) {
-            csptScannerTask.updateProgressSource(this.currentScan);
+            csptScannerTask.updateProgressReflection(this.currentScan);
         }
 
         HttpRequest httpRequest = requestResponse.finalRequest();

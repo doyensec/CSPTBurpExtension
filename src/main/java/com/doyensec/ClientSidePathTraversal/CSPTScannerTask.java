@@ -51,7 +51,7 @@ public class CSPTScannerTask extends SwingWorker<String, Object> {
         csptForm.setProgressSource(100 * scanProxyCurrent / this.scanProxyTotal);
     }
 
-    private void updateProgressReflection(int scanProxyCurrent) {
+    public void updateProgressReflection(int scanProxyCurrent) {
         csptForm.setProgressReflection(100 * scanProxyCurrent / this.scanProxyTotal);
     }
 
