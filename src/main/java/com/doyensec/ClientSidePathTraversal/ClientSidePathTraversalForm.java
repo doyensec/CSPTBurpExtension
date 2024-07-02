@@ -105,7 +105,6 @@ public class ClientSidePathTraversalForm {
         resultSinkTable.setModel(resultSinkTableModel);
         resultSinkTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        // TODO: check if it's ok to only initialize these once
         createContextualMenusSources(cspt);
         createContextualMenusSinks(cspt);
     }

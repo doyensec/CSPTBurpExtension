@@ -65,7 +65,6 @@ public class ProxyFilterPotentialSink implements ProxyHistoryFilter {
 
         // Check reflection in path
         // For each URI param check if value correspond to path param
-        // TODO: check if pathWithoutQuery here is correct
         for (String pathParam : httpRequest.pathWithoutQuery().split("/")) {
             // We check reflection in lower case, we don't check for a transformed value
             if (!pathParam.isEmpty() && paramValueLookup.containsKey(pathParam.toLowerCase())) {

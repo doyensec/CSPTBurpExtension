@@ -124,7 +124,7 @@ public class ClientSidePathTraversal implements BurpExtension {
 
         for (String falsePositiveURL : falsePositiveURLs) {
             if (ptSource.sourceURL.matches(falsePositiveURL)) {
-                api.logging().logToOutput("False positive identification: " + ptSource); // TODO: is ptSource right here?
+                api.logging().logToOutput("False positive identification: " + falsePositiveURL); // TODO: is ptSource right here?
                 return true;
             }
         }
