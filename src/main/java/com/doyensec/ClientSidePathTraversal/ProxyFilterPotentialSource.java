@@ -1,8 +1,6 @@
 package com.doyensec.ClientSidePathTraversal;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import burp.api.montoya.MontoyaApi;
@@ -15,37 +13,27 @@ import burp.api.montoya.proxy.ProxyHttpRequestResponse;
 
 public class ProxyFilterPotentialSource implements ProxyHistoryFilter {
 
-    Pattern scope;
-
-    int currentScan = 0;
-    int lastScanUpdate = 0;
-    ClientSidePathTraversal cspt;
-    CSPTScannerTask csptScannerTask;
-
-    private final Map<String, Set<PotentialSource>> paramValueLookup;
+    private Pattern scope;
+    private int currentScan;
+    private ClientSidePathTraversal cspt;
+    private CSPTScannerTask csptScannerTask;
+    private Map<String, Set<PotentialSource>> paramValueLookup = new HashMap<>();
+    public Map<String, Set<PotentialSource>> getParamValueLookup() {
+        return paramValueLookup;
+    }
 
     public ProxyFilterPotentialSource(ClientSidePathTraversal cspt, CSPTScannerTask csptScannerTask) {
         this.cspt = cspt;
         this.scope = Pattern.compile(cspt.getSourceScope(), Pattern.CASE_INSENSITIVE);
 
-        paramValueLookup = new HashMap<>();
         this.csptScannerTask = csptScannerTask;
         this.currentScan = 0;
-        this.lastScanUpdate = 0;
-
     }
-
-    public Map<String, Set<PotentialSource>> getParamValueLookup() {
-        return paramValueLookup;
-    } // TODO: WARNING this is never called!
 
     @Override
     public boolean matches(ProxyHttpRequestResponse requestResponse) {
-        this.currentScan += 1;
-
-        if (lastScanUpdate + 100 < currentScan) {
-            lastScanUpdate = currentScan;
-
+        // Update the percent every 100 requests
+        if (currentScan++ % 100 == 0) {
             csptScannerTask.updateProgressSource(this.currentScan);
         }
 
@@ -77,15 +65,16 @@ public class ProxyFilterPotentialSource implements ProxyHistoryFilter {
             return false;
         }
 
-        boolean filtered = false;
+        boolean valid = false;
         for (ParsedHttpParameter params : httpRequest.parameters(HttpParameterType.URL)) {
-            // Add new source to list if it is not a false positive
-            if (cspt.addNewSource(params.name(), params.value().toLowerCase(), httpRequest.url())) {
-                filtered = true;
+            PotentialSource ptSource = new PotentialSource(params.name(), params.value().toLowerCase(), httpRequest.url());
+
+            if (!this.cspt.checkIfFalsePositive(ptSource)) {
+                valid = true;
+                this.paramValueLookup.computeIfAbsent(ptSource.paramValue, x -> new HashSet<>()).add(ptSource);
             }
         }
 
-        return filtered;
+        return valid;
     }
-
 }

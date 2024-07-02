@@ -72,19 +72,26 @@ public class ClientSidePathTraversal implements BurpExtension {
         this.canary = canary;
     }
 
-    private Map<String, Set<PotentialSink>> pathLookup = new HashMap<>();
-    public Map<String, Set<PotentialSink>> getPathLookup() {
-        return pathLookup;
-    }
+    // Plugin init
+    @Override
+    public void initialize(MontoyaApi api) {
+        this.api = api;
+        this.api.extension().setName("Client-Side Path Traversal v" + version);
+        this.api.scanner().registerScanCheck(new ClientSidePathTraversalPassiveScan(api, this));
+        this.api.logging().logToOutput("Extension has been loaded.");
 
-    private Map<String, Set<PotentialSource>> paramValueLookup = new HashMap<>();
-    public Map<String, Set<PotentialSource>> getParamValueLookup() {
-        return paramValueLookup;
+        loadData();
+
+        csptForm = new ClientSidePathTraversalForm(this);
+        falsePositivesForm = new FalsePositivesForm(this);
+        JTabbedPane tabPane = new JTabbedPane();
+        tabPane.addTab("CSPT", csptForm.$$$getRootComponent$$$());
+        tabPane.addTab("False Positives List", falsePositivesForm.$$$getRootComponent$$$());
+        this.api.userInterface().registerSuiteTab("CSPT", tabPane);
     }
 
 
     // Utility methods
-
     public String generateCanaryToken() {
         return api.utilities().randomUtils().randomString(12, RandomUtils.CharacterSet.ASCII_LETTERS);
     }
@@ -107,7 +114,7 @@ public class ClientSidePathTraversal implements BurpExtension {
         falsePositivesForm.display(this);
     }
 
-    private boolean checkIfFalsePositive(PotentialSource ptSource) {
+    public boolean checkIfFalsePositive(PotentialSource ptSource) {
         Set<String> falsePositiveURLs = falsePositivesList.get(ptSource.paramName);
         if (falsePositiveURLs == null) {
             return false;
@@ -123,37 +130,27 @@ public class ClientSidePathTraversal implements BurpExtension {
         return false;
     }
 
-    public boolean addNewSource(String getParameterName, String getParameterValue, String url) {
-        PotentialSource ptSource = new PotentialSource(getParameterName, getParameterValue.toLowerCase(), url);
+    public String replaceParamWithCanary(String param, String url) {
+        HttpRequest http = HttpRequest.httpRequestFromUrl(url);
+        HttpRequest finalHttp = http.withUpdatedParameters(HttpParameter.urlParameter(param, canary));
+        api.logging().logToOutput(param + ":" + canary + ":" + url + ":" + finalHttp.url());
+        return finalHttp.url();
+    }
 
-        // This source is present in falsePositive list
-        if (checkIfFalsePositive(ptSource)) {
-            return false;
+    public List<burp.api.montoya.proxy.ProxyHttpRequestResponse> getExploitableSinks(String httpMethod, String host) {
+        ProxyFilterExploitableSink filter = new ProxyFilterExploitableSink(httpMethod, host);
+        api.logging().logToOutput("Scanning for exploitable sink:" + httpMethod + ":" + host);
+
+        List<ProxyHttpRequestResponse> exploitableSinks = api.proxy().history(filter);
+
+        for (ProxyHttpRequestResponse proxyHttpRequestResponse : exploitableSinks) {
+            api.logging().logToOutput(proxyHttpRequestResponse.finalRequest().url());
+            api.organizer().sendToOrganizer(HttpRequestResponse.httpRequestResponse(proxyHttpRequestResponse.finalRequest(), proxyHttpRequestResponse.originalResponse()));
         }
-
-        this.paramValueLookup.computeIfAbsent(getParameterValue.toLowerCase(), x -> new HashSet<>()).add(ptSource);
-        return true;
+        return exploitableSinks;
     }
 
-    // Plugin init
-    @Override
-    public void initialize(MontoyaApi api) {
-        this.api = api;
-        this.api.extension().setName("Client-Side Path Traversal v" + version);
-        this.api.scanner().registerScanCheck(new ClientSidePathTraversalPassiveScan(api, this));
-        this.api.logging().logToOutput("Extension has been loaded.");
-
-        loadData();
-
-        csptForm = new ClientSidePathTraversalForm(this);
-        falsePositivesForm = new FalsePositivesForm(this);
-        JTabbedPane tabPane = new JTabbedPane();
-        tabPane.addTab("CSPT", csptForm.$$$getRootComponent$$$());
-        tabPane.addTab("False Positives List", falsePositivesForm.$$$getRootComponent$$$());
-        this.api.userInterface().registerSuiteTab("CSPT", tabPane);
-    }
-
-    // Project file persistence
+    // Params persistence in project file
     public void saveData() {
         PersistedObject data = api.persistence().extensionData();
         PersistedList<String> persisList = PersistedList.persistedStringList();
@@ -206,66 +203,8 @@ public class ClientSidePathTraversal implements BurpExtension {
 
     }
 
-    // Scan methods
-    public void step1ListSource(CSPTScannerTask csptScannerTask) {
-        saveData();
-        printDebugInformationAboutRun();
-        this.paramValueLookup.clear();
-        this.pathLookup.clear();
-
-        // After processing, the filter will contain all the data
-        ProxyFilterPotentialSource sourceFilter = new ProxyFilterPotentialSource(this, csptScannerTask);
-        api.logging().logToOutput("Scan started");
-
-        api.proxy().history(sourceFilter);
-        // TODO: nothing happens after the filter is invoked?
-    }
-
-    public void step2findReflection(CSPTScannerTask csptScannerTask) {
-        if (!paramValueLookup.isEmpty()) {
-            ProxyFilterPotentialSink filter = new ProxyFilterPotentialSink(this, csptScannerTask);
-            api.logging().logToOutput("Scan for Sink started");
-
-            // After processing, the filter will contain all the data
-            api.proxy().history(filter);
-            this.pathLookup = filter.getPathLookup();
-            printDebugResultsAboutRun();
-        }
-    }
-
-    public List<burp.api.montoya.proxy.ProxyHttpRequestResponse> getExploitableSink(String httpMethod, String host) {
-        ProxyFilterExploitableSink filter = new ProxyFilterExploitableSink(httpMethod, host);
-        api.logging().logToOutput("Scanning for exploitable sink:" + httpMethod + ":" + host);
-
-        List<ProxyHttpRequestResponse> exploitableSinks = api.proxy().history(filter);
-
-        for (ProxyHttpRequestResponse proxyHttpRequestResponse : exploitableSinks) {
-            api.logging().logToOutput(proxyHttpRequestResponse.finalRequest().url());
-            api.organizer().sendToOrganizer(HttpRequestResponse.httpRequestResponse(
-                    proxyHttpRequestResponse.finalRequest(), proxyHttpRequestResponse.originalResponse()));
-        }
-        return exploitableSinks;
-    }
-
-    public String replaceParamWithCanary(String param, String url) {
-        HttpRequest http = HttpRequest.httpRequestFromUrl(url);
-        HttpRequest finalHttp = http.withUpdatedParameters(HttpParameter.urlParameter(param, canary));
-        api.logging().logToOutput(param + ":" + canary + ":" + url + ":" + finalHttp.url());
-        return finalHttp.url();
-    }
-
-    public List<String> getAllSourcesWithCanary() {
-        List<String> urlsWithCanary = new ArrayList<>();
-        for (String paramValue : pathLookup.keySet()) {
-            for (PotentialSource source : paramValueLookup.get(paramValue)) {
-                urlsWithCanary.add(replaceParamWithCanary(source.paramName, source.sourceURL));
-            }
-        }
-        return urlsWithCanary;
-    }
-
     // Debug methods
-    private void printDebugInformationAboutRun() {
+    public void printDebugInformationAboutRun() {
         api.logging().logToOutput("sourceScope: " + sinkScope);
         api.logging().logToOutput("sinkScope: " + sinkScope);
         api.logging().logToOutput("sinkHTTPMethods:");
@@ -274,25 +213,4 @@ public class ClientSidePathTraversal implements BurpExtension {
         }
     }
 
-    private void printDebugResultsAboutRun() {
-        // We have finding
-        if (!getPathLookup().isEmpty()) {
-            api.logging().logToOutput("We found " + pathLookup.size() + " findings");
-            for (String key : getPathLookup().keySet()) {
-
-                // The following source hit the following sink
-                Set<PotentialSource> sources = paramValueLookup.get(key);
-                Set<PotentialSink> sinks = getPathLookup().get(key);
-                api.logging().logToOutput("The following sources:");
-                for (PotentialSource source : sources) {
-                    api.logging().logToOutput(source.paramValue + ":" + source.paramName + ":" + source.sourceURL);
-                }
-                api.logging().logToOutput("Hit the following sink:");
-                for (PotentialSink sink : sinks) {
-                    api.logging().logToOutput(sink.method + ":" + sink.url);
-                }
-
-            }
-        }
-    }
 }

@@ -16,7 +16,6 @@ public class ProxyFilterPotentialSink implements ProxyHistoryFilter {
     private final Pattern scope;
     final Map<String, Set<PotentialSource>> paramValueLookup;
     int currentScan;
-    int lastScanUpdate;
     private List<String> sinkHTTPMethods;
 
     ClientSidePathTraversal cspt;
@@ -27,14 +26,13 @@ public class ProxyFilterPotentialSink implements ProxyHistoryFilter {
 
     public ProxyFilterPotentialSink(ClientSidePathTraversal cspt, CSPTScannerTask csptScannerTask) {
         this.api = cspt.getApi();
-        this.paramValueLookup = cspt.getParamValueLookup();
+        this.paramValueLookup = csptScannerTask.getParamValueLookup();
         this.pathLookup = new HashMap<>();
         this.sinkHTTPMethods = cspt.getSinkHTTPMethods();
         this.scope = Pattern.compile(cspt.getSinkScope(), Pattern.CASE_INSENSITIVE);
         this.cspt = cspt;
         this.csptScannerTask = csptScannerTask;
         this.currentScan = 0;
-        this.lastScanUpdate = 0;
     }
 
     public Map<String, Set<PotentialSink>> getPathLookup() {
@@ -42,16 +40,14 @@ public class ProxyFilterPotentialSink implements ProxyHistoryFilter {
     }
 
     /* 
-     This method implements the logic to find sink.
-     It looks for reflection*/
+     This method implements the logic to find sinks.
+     It looks for reflection.
+     */
     @Override
     public boolean matches(ProxyHttpRequestResponse requestResponse) {
-        currentScan++;
-
-        if (lastScanUpdate + 100 < currentScan) {
-            lastScanUpdate = currentScan;
-
-            csptScannerTask.updateProgressReflection(this.currentScan);
+        // Update the percent every 100 requests
+        if (currentScan++ % 100 == 0) {
+            csptScannerTask.updateProgressSource(this.currentScan);
         }
 
         HttpRequest httpRequest = requestResponse.finalRequest();
@@ -67,6 +63,7 @@ public class ProxyFilterPotentialSink implements ProxyHistoryFilter {
 
         // Check reflection in path
         // For each URI param check if value correspond to path param
+        // TODO: check if pathWithoutQuery here is correct
         for (String pathParam : httpRequest.pathWithoutQuery().split("/")) {
             // We check reflection in lower case, we don't check for a transformed value
             if (!pathParam.isEmpty() && paramValueLookup.containsKey(pathParam.toLowerCase())) {

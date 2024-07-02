@@ -60,10 +60,17 @@ public class ClientSidePathTraversalForm {
     private final DefaultTableModel resultSourceTableModel = new DefaultTableModel(new String[]{"Param Name", "URL"}, 0);
     private final DefaultTableModel resultSinkTableModel = new DefaultTableModel(new String[]{"Method", "URL"}, 0);
     private final DefaultListModel<String> resultsListModel = new DefaultListModel<>();
+    private CSPTScannerTask currentTask = null;
+    public CSPTScannerTask getCurrentTask() {
+        return currentTask;
+    }
 
     public ClientSidePathTraversalForm(ClientSidePathTraversal cspt) {
 
         $$$setupUI$$$();
+
+        // Placeholder to not have to handle null values
+        this.currentTask = new CSPTScannerTask(cspt);
 
         // Set up buttons
         scanButton.addActionListener(e -> {
@@ -71,12 +78,12 @@ public class ClientSidePathTraversalForm {
             saveConfiguration(cspt);
             progressBarSource.setValue(0);
 
-            CSPTScannerTask csptScannerTask = new CSPTScannerTask(cspt);
-            csptScannerTask.execute();
+            this.currentTask = new CSPTScannerTask(cspt);
+            this.currentTask.execute();
         });
 
         exportSourcesWithCanaryButton.addActionListener(e -> {
-            List<String> sourceWithCanary = cspt.getAllSourcesWithCanary();
+            List<String> sourceWithCanary = this.getCurrentTask().getAllSourcesWithCanary();
             Toolkit.getDefaultToolkit().getSystemClipboard().setContents(
                     new StringSelection(String.join("\n", sourceWithCanary)), null);
         });
@@ -154,11 +161,9 @@ public class ClientSidePathTraversalForm {
     public void setProgressSource(int percent) {
         progressBarSource.setValue(percent);
     }
-
     public void initProgressSource() {
         progressBarSource.setIndeterminate(true);
     }
-
     public void finishProgressSource() {
         progressBarSource.setIndeterminate(false);
         progressBarSource.setValue(100);
@@ -167,11 +172,9 @@ public class ClientSidePathTraversalForm {
     public void setProgressReflection(int percent) {
         progressBarReflection.setValue(percent);
     }
-
     public void initProgressReflection() {
         progressBarReflection.setIndeterminate(true);
     }
-
     public void finishProgressReflection() {
         progressBarReflection.setIndeterminate(false);
         progressBarReflection.setValue(100);
@@ -179,8 +182,7 @@ public class ClientSidePathTraversalForm {
 
     public void displayResults(
             Map<String, Set<PotentialSource>> paramValueLookup,
-            Map<String, Set<PotentialSink>> pathLookup,
-            ClientSidePathTraversal cspt
+            Map<String, Set<PotentialSink>> pathLookup
     ) {
 
         resultsListModel.clear();
@@ -230,7 +232,7 @@ public class ClientSidePathTraversalForm {
 
     private void createContextualMenusSinks(ClientSidePathTraversal cspt) {
         final JPopupMenu popupMenuSinkTable = new JPopupMenu();
-        JMenuItem findLaxSinks = new JMenuItem("Send sinks(host/method) To Organizer");
+        JMenuItem findLaxSinks = new JMenuItem("Send sinks (host/method) to Organizer");
 
         resultSinkTable.addMouseListener(new MouseAdapter() {
             @Override
@@ -260,7 +262,7 @@ public class ClientSidePathTraversalForm {
             String url = table.getValueAt(table.getSelectedRow(), 1).toString();
 
             // Send sinks to the organizer
-            cspt.getExploitableSink(method, HttpRequest.httpRequestFromUrl(url).httpService().host());
+            cspt.getExploitableSinks(method, HttpRequest.httpRequestFromUrl(url).httpService().host());
         });
         popupMenuSinkTable.add(findLaxSinks);
         resultSinkTable.setComponentPopupMenu(popupMenuSinkTable);
