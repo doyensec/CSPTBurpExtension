@@ -100,6 +100,7 @@ A special thanks to our contributors. Your dedication and commitment have been i
 
 Current:
 - **Maintainer:** Maxence Schmitt [@maxenceschmitt (Twitter)](https://twitter.com/maxenceschmitt)
+- **Contributor:** Savio Sisco [@lokiuox (Github)](https://github.com/lokiuox)
 
 This project was made with support of [Doyensec](https://doyensec.com/research.html).
 
