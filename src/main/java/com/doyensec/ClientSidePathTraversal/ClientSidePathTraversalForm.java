@@ -49,6 +49,7 @@ public class ClientSidePathTraversalForm {
     public CSPTScannerTask getCurrentTask() {
         return currentTask;
     }
+    boolean scanInProgress = false;
 
     public ClientSidePathTraversalForm(ClientSidePathTraversal cspt) {
 
@@ -60,13 +61,25 @@ public class ClientSidePathTraversalForm {
 
         // Set up buttons
         scanButton.addActionListener(e -> {
-            // Save Storage
-            saveConfiguration(cspt);
+            if (!scanInProgress) {
+                // Start scan
 
-            this.reset();
+                saveConfiguration(cspt);
 
-            this.currentTask = new CSPTScannerTask(cspt);
-            this.currentTask.execute();
+                this.reset();
+
+                this.currentTask = new CSPTScannerTask(cspt);
+                this.currentTask.execute();
+                scanButton.setText("Cancel");
+                this.scanInProgress = true;
+            } else {
+                // Cancel scan
+                this.currentTask.cancel(true);
+                this.currentTask = new CSPTScannerTask(cspt);
+                this.reset();
+                scanButton.setText("Scan");
+                this.scanInProgress = false;
+            }
         });
 
         exportSourcesWithCanaryButton.addActionListener(e -> {
@@ -99,9 +112,10 @@ public class ClientSidePathTraversalForm {
 
     public void reset() {
         // Reset progress bars
-        setProgressReflection(0);
-        setProgressSource(0);
-
+        progressBarSource.setIndeterminate(false);
+        progressBarSource.setValue(0);
+        progressBarReflection.setIndeterminate(false);
+        progressBarReflection.setValue(0);
 
         // Reset tables
         for (ListSelectionListener listSelectionListener : resultsList.getListSelectionListeners()) {
@@ -211,6 +225,9 @@ public class ClientSidePathTraversalForm {
             if (e.getValueIsAdjusting()) return;
             displaySourcesAndSinks(this.currentTask.getParamValueLookup(), this.currentTask.getPathLookup(), resultsList.getSelectedValue());
         });
+
+        this.scanInProgress = false;
+        this.scanButton.setText("Scan");
     }
 
     public void displaySourcesAndSinks(

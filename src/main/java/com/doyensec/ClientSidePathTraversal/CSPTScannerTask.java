@@ -67,22 +67,25 @@ public class CSPTScannerTask extends SwingWorker<String, Object> {
         // Ensure that a Scanner Task is never executed twice
         assert(!this.executed);
         executed = true;
-
         this.cspt.saveData();
         this.cspt.printDebugInformationAboutRun();
 
         // This will fill paramValueLookup with potentialSource
         this.scanProxyTotal = cspt.getApi().proxy().history().size();
 
+        if (this.isCancelled()) return "";
+
         // STEP 1: Get sources
         this.cspt.getApi().logging().logToOutput("Scan started");
         this.initProgressSource();
         this.step1ListSource();
+        if (this.isCancelled()) return "";
         this.finishProgressSource();
 
         // STEP 2: identify reflections
         this.initProgressReflection();
         this.step2findReflection();
+        if (this.isCancelled()) return "";
         this.finishProgressReflection();
 
         this.printDebugResultsAboutRun();
