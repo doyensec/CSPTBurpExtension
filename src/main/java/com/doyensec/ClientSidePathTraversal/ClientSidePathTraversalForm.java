@@ -61,6 +61,7 @@ public class ClientSidePathTraversalForm {
     private final DefaultTableModel resultSinkTableModel = new DefaultTableModel(new String[]{"Method", "URL"}, 0);
     private final DefaultListModel<String> resultsListModel = new DefaultListModel<>();
     private CSPTScannerTask currentTask = null;
+
     public CSPTScannerTask getCurrentTask() {
         return currentTask;
     }
@@ -161,9 +162,11 @@ public class ClientSidePathTraversalForm {
     public void setProgressSource(int percent) {
         progressBarSource.setValue(percent);
     }
+
     public void initProgressSource() {
         progressBarSource.setIndeterminate(true);
     }
+
     public void finishProgressSource() {
         progressBarSource.setIndeterminate(false);
         progressBarSource.setValue(100);
@@ -172,9 +175,11 @@ public class ClientSidePathTraversalForm {
     public void setProgressReflection(int percent) {
         progressBarReflection.setValue(percent);
     }
+
     public void initProgressReflection() {
         progressBarReflection.setIndeterminate(true);
     }
+
     public void finishProgressReflection() {
         progressBarReflection.setIndeterminate(false);
         progressBarReflection.setValue(100);
@@ -349,26 +354,28 @@ public class ClientSidePathTraversalForm {
         contentPanel.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
         final JSplitPane splitPane1 = new JSplitPane();
         splitPane1.setOrientation(0);
-        contentPanel.add(splitPane1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, new Dimension(200, 200), null, 0, false));
+        contentPanel.add(splitPane1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(200, 200), null, 0, false));
         final JPanel panel1 = new JPanel();
-        panel1.setLayout(new GridLayoutManager(1, 4, new Insets(0, 0, 0, 0), -1, -1));
+        panel1.setLayout(new GridLayoutManager(1, 4, new Insets(4, 4, 4, 4), -1, -1));
         splitPane1.setLeftComponent(panel1);
         scanOption = new JPanel();
-        scanOption.setLayout(new GridLayoutManager(2, 2, new Insets(0, 0, 0, 0), -1, -1));
-        panel1.add(scanOption, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        scanOption.setLayout(new GridLayoutManager(2, 2, new Insets(0, 0, 0, 0), -1, 10));
+        panel1.add(scanOption, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         sourceScope = new JTextField();
-        sourceScope.setEditable(false);
+        sourceScope.setEditable(true);
         sourceScope.setText(".*");
         scanOption.add(sourceScope, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
         sinkScope = new JTextField();
         sinkScope.setText(".*");
         scanOption.add(sinkScope, new GridConstraints(1, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
         final JLabel label1 = new JLabel();
+        label1.setHorizontalAlignment(4);
         label1.setText("Source scope (RegExp)");
         scanOption.add(label1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JLabel label2 = new JLabel();
+        label2.setHorizontalAlignment(4);
         label2.setText("Sink scope (RegExp)");
-        scanOption.add(label2, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        scanOption.add(label2, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(129, 8), null, 0, false));
         sinkOption = new JPanel();
         sinkOption.setLayout(new GridLayoutManager(3, 2, new Insets(0, 0, 0, 0), -1, -1));
         panel1.add(sinkOption, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
@@ -403,14 +410,14 @@ public class ClientSidePathTraversalForm {
         final JLabel label3 = new JLabel();
         label3.setText("Canary Token : ");
         canaryConf.add(label3, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        generateNewCanaryValueButton = new JButton();
-        generateNewCanaryValueButton.setText("Regenerate canary token");
-        canaryConf.add(generateNewCanaryValueButton, new GridConstraints(1, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         copyCanaryValueButton = new JButton();
         copyCanaryValueButton.setText("Copy canary value");
         canaryConf.add(copyCanaryValueButton, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        generateNewCanaryValueButton = new JButton();
+        generateNewCanaryValueButton.setText("Regenerate canary token");
+        canaryConf.add(generateNewCanaryValueButton, new GridConstraints(1, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JPanel panel2 = new JPanel();
-        panel2.setLayout(new GridLayoutManager(3, 3, new Insets(0, 0, 0, 0), -1, -1));
+        panel2.setLayout(new GridLayoutManager(3, 3, new Insets(0, 0, 0, 2), -1, -1));
         panel1.add(panel2, new GridConstraints(0, 3, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         scanButton = new JButton();
         scanButton.setText("Scan");
@@ -431,7 +438,7 @@ public class ClientSidePathTraversalForm {
         label5.setText("Source listing");
         panel2.add(label5, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JPanel panel3 = new JPanel();
-        panel3.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
+        panel3.setLayout(new GridLayoutManager(1, 1, new Insets(4, 4, 4, 4), -1, -1));
         splitPane1.setRightComponent(panel3);
         final JSplitPane splitPane2 = new JSplitPane();
         panel3.add(splitPane2, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, new Dimension(200, 200), null, 0, false));
