@@ -1,9 +1,6 @@
 package com.doyensec.ClientSidePathTraversal;
 
 import burp.api.montoya.MontoyaApi;
-import burp.api.montoya.http.message.params.HttpParameterType;
-import burp.api.montoya.http.message.params.ParsedHttpParameter;
-import burp.api.montoya.proxy.ProxyHttpRequestResponse;
 
 import javax.swing.SwingWorker;
 import java.util.*;
@@ -90,7 +87,7 @@ public class CSPTScannerTask extends SwingWorker<String, Object> {
 
         this.printDebugResultsAboutRun();
 
-        this.csptForm.displayResults(paramValueLookup, pathLookup);
+        this.csptForm.displayResults(this);
 
         return "";
     }

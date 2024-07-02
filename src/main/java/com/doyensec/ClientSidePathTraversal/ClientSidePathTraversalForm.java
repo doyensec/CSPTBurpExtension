@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 
 import burp.api.montoya.http.message.requests.HttpRequest;
@@ -42,7 +43,7 @@ public class ClientSidePathTraversalForm {
     private JProgressBar progressBarReflection;
     private final DefaultTableModel resultSourceTableModel = new DefaultTableModel(new String[]{"Param Name", "URL"}, 0);
     private final DefaultTableModel resultSinkTableModel = new DefaultTableModel(new String[]{"Method", "URL"}, 0);
-    private final DefaultListModel<String> resultsListModel = new DefaultListModel<>();
+    private ClientSidePathTraversal cspt;
     private CSPTScannerTask currentTask = null;
 
     public CSPTScannerTask getCurrentTask() {
@@ -53,6 +54,7 @@ public class ClientSidePathTraversalForm {
 
         $$$setupUI$$$();
 
+        this.cspt = cspt;
         // Placeholder to not have to handle null values
         this.currentTask = new CSPTScannerTask(cspt);
 
@@ -60,7 +62,8 @@ public class ClientSidePathTraversalForm {
         scanButton.addActionListener(e -> {
             // Save Storage
             saveConfiguration(cspt);
-            progressBarSource.setValue(0);
+
+            this.reset();
 
             this.currentTask = new CSPTScannerTask(cspt);
             this.currentTask.execute();
@@ -85,12 +88,28 @@ public class ClientSidePathTraversalForm {
 
         // Init results table
         resultSourceTable.setModel(resultSourceTableModel);
+        resultSourceTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         resultSinkTable.setModel(resultSinkTableModel);
-        resultsList.setModel(resultsListModel);
+        resultSinkTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         // TODO: check if it's ok to only initialize these once
         createContextualMenusSources(cspt);
         createContextualMenusSinks(cspt);
+    }
+
+    public void reset() {
+        // Reset progress bars
+        setProgressReflection(0);
+        setProgressSource(0);
+
+
+        // Reset tables
+        for (ListSelectionListener listSelectionListener : resultsList.getListSelectionListeners()) {
+            resultsList.removeListSelectionListener(listSelectionListener);
+        }
+        resultsList.setListData(new String[0]);
+        resultSinkTableModel.setRowCount(0);
+        resultSourceTableModel.setRowCount(0);
     }
 
     public void loadConfiguration(ClientSidePathTraversal cspt) {
@@ -143,20 +162,17 @@ public class ClientSidePathTraversalForm {
     }
 
     public void setProgressSource(int percent) {
-        SwingUtilities.invokeLater(() -> {
-            progressBarSource.setValue(percent);
-        });
+        progressBarSource.setValue(percent);
     }
 
     public void initProgressSource() {
+        progressBarSource.setValue(0);
         progressBarSource.setIndeterminate(true);
     }
 
     public void finishProgressSource() {
-        SwingUtilities.invokeLater(() -> {
-            progressBarSource.setIndeterminate(false);
-            progressBarSource.setValue(100);
-        });
+        progressBarSource.setIndeterminate(false);
+        progressBarSource.setValue(100);
     }
 
     public void setProgressReflection(int percent) {
@@ -164,6 +180,7 @@ public class ClientSidePathTraversalForm {
     }
 
     public void initProgressReflection() {
+        progressBarReflection.setValue(0);
         progressBarReflection.setIndeterminate(true);
     }
 
@@ -173,26 +190,26 @@ public class ClientSidePathTraversalForm {
     }
 
     public void displayResults(
-            Map<String, Set<PotentialSource>> paramValueLookup,
-            Map<String, Set<PotentialSink>> pathLookup
+            CSPTScannerTask task
     ) {
-
-        resultsListModel.clear();
-        for (String paramValue : pathLookup.keySet()) {
-            resultsListModel.addElement(paramValue);
+        if (task != this.currentTask) {
+            // A new scan was probably started before this one could finish, ignore
+            return;
         }
 
-        if (resultsList.getListSelectionListeners() != null && resultsList.getListSelectionListeners().length > 0) {
-            resultsList.removeListSelectionListener(resultsList.getListSelectionListeners()[0]);
+        var pathLookup = task.getPathLookup();
+
+        // Not removing the selection listener from the list will hang the extension
+
+        for (ListSelectionListener listSelectionListener : resultsList.getListSelectionListeners()) {
+            resultsList.removeListSelectionListener(listSelectionListener);
         }
+
+        resultsList.setListData(pathLookup.keySet().toArray(new String[0]));
 
         resultsList.addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) {
-                displaySourcesAndSinks(paramValueLookup, pathLookup, resultsList.getSelectedValue());
-                // TODO: check if it's ok to only initialize these once
-                //createContextualMenusSources(cspt);
-                //createContextualMenusSinks(cspt);
-            }
+            if (e.getValueIsAdjusting()) return;
+            displaySourcesAndSinks(this.currentTask.getParamValueLookup(), this.currentTask.getPathLookup(), resultsList.getSelectedValue());
         });
     }
 
@@ -246,19 +263,14 @@ public class ClientSidePathTraversalForm {
             }
         });
         findLaxSinks.addActionListener(e -> {
-            Component c = (Component) e.getSource();
-            JPopupMenu popup = (JPopupMenu) c.getParent();
-            JTable table = (JTable) popup.getInvoker();
-
-            String method = table.getValueAt(table.getSelectedRow(), 0).toString();
-            String url = table.getValueAt(table.getSelectedRow(), 1).toString();
+            String method = resultSinkTable.getValueAt(resultSinkTable.getSelectedRow(), 0).toString();
+            String url = resultSinkTable.getValueAt(resultSinkTable.getSelectedRow(), 1).toString();
 
             // Send sinks to the organizer
             cspt.getExploitableSinks(method, HttpRequest.httpRequestFromUrl(url).httpService().host());
         });
         popupMenuSinkTable.add(findLaxSinks);
         resultSinkTable.setComponentPopupMenu(popupMenuSinkTable);
-
     }
 
     private void createContextualMenusSources(ClientSidePathTraversal cspt) {
@@ -288,12 +300,8 @@ public class ClientSidePathTraversalForm {
         });
 
         copyURLWithCanary.addActionListener(e -> {
-            Component c = (Component) e.getSource();
-            JPopupMenu popup = (JPopupMenu) c.getParent();
-            JTable table = (JTable) popup.getInvoker();
-
-            String url = table.getValueAt(table.getSelectedRow(), 1).toString();
-            String param = table.getValueAt(table.getSelectedRow(), 0).toString();
+            String url = resultSourceTable.getValueAt(resultSourceTable.getSelectedRow(), 1).toString();
+            String param = resultSourceTable.getValueAt(resultSourceTable.getSelectedRow(), 0).toString();
             String urlWithCanary = cspt.replaceParamWithCanary(param, url);
 
             Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(urlWithCanary), null);
@@ -301,29 +309,19 @@ public class ClientSidePathTraversalForm {
         popupMenu.add(copyURLWithCanary);
 
         copyURL.addActionListener(e -> {
-            Component c = (Component) e.getSource();
-            JPopupMenu popup = (JPopupMenu) c.getParent();
-            JTable table = (JTable) popup.getInvoker();
-
-            String url = table.getValueAt(table.getSelectedRow(), 1).toString();
+            String url = resultSourceTable.getValueAt(resultSourceTable.getSelectedRow(), 1).toString();
             Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(url), null);
         });
         popupMenu.add(copyURL);
 
         falsePositiveParam.addActionListener(e -> {
-            Component c = (Component) e.getSource();
-            JPopupMenu popup = (JPopupMenu) c.getParent();
-            JTable table = (JTable) popup.getInvoker();
-            cspt.addFalsePositive(table.getValueAt(table.getSelectedRow(), 0).toString(), ".*");
+            cspt.addFalsePositive(resultSourceTable.getValueAt(resultSourceTable.getSelectedRow(), 0).toString(), ".*");
         });
         popupMenu.add(falsePositiveParam);
 
         falsePositiveParamURL.addActionListener(e -> {
-            Component c = (Component) e.getSource();
-            JPopupMenu popup = (JPopupMenu) c.getParent();
-            JTable table = (JTable) popup.getInvoker();
-            cspt.addFalsePositive(table.getValueAt(table.getSelectedRow(), 0).toString(),
-                    Pattern.quote(table.getValueAt(table.getSelectedRow(), 1).toString()));
+            cspt.addFalsePositive(resultSourceTable.getValueAt(resultSourceTable.getSelectedRow(), 0).toString(),
+                    Pattern.quote(resultSourceTable.getValueAt(resultSourceTable.getSelectedRow(), 1).toString()));
         });
         popupMenu.add(falsePositiveParamURL);
         resultSourceTable.setComponentPopupMenu(popupMenu);

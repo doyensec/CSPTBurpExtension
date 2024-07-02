@@ -98,8 +98,9 @@ public class ClientSidePathTraversal implements BurpExtension {
     }
 
     public void addFalsePositive(String getParameterName, String urlRegexp) {
-        falsePositivesList.computeIfAbsent(getParameterName, x -> new HashSet<>()).add(urlRegexp);
-        falsePositivesForm.refresh();
+        this.falsePositivesList.computeIfAbsent(getParameterName, x -> new HashSet<>()).add(urlRegexp);
+        this.falsePositivesForm.refresh();
+        this.saveData();
     }
 
     public void removeFalsePositive(String getParameterName, String urlRegexp) {
