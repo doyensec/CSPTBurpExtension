@@ -22,7 +22,7 @@ public class ProxyFilterPotentialSource implements ProxyHistoryFilter {
     ClientSidePathTraversal cspt;
     CSPTScannerTask csptScannerTask;
 
-    private Map<String, Set<PotentialSource>> paramValueLookup;
+    private final Map<String, Set<PotentialSource>> paramValueLookup;
 
     public ProxyFilterPotentialSource(ClientSidePathTraversal cspt, CSPTScannerTask csptScannerTask) {
         this.cspt = cspt;

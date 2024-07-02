@@ -57,9 +57,9 @@ public class ClientSidePathTraversalForm {
     private JPanel canaryConf;
     private JProgressBar progressBarSource;
     private JProgressBar progressBarReflection;
-    private DefaultTableModel resultSourceTableModel = new DefaultTableModel(new String[]{"Param Name", "URL"}, 0);
-    private DefaultTableModel resultSinkTableModel = new DefaultTableModel(new String[]{"Method", "URL"}, 0);
-    private DefaultListModel<String> resultsListModel = new DefaultListModel<>();
+    private final DefaultTableModel resultSourceTableModel = new DefaultTableModel(new String[]{"Param Name", "URL"}, 0);
+    private final DefaultTableModel resultSinkTableModel = new DefaultTableModel(new String[]{"Method", "URL"}, 0);
+    private final DefaultListModel<String> resultsListModel = new DefaultListModel<>();
 
     public ClientSidePathTraversalForm(ClientSidePathTraversal cspt) {
 
