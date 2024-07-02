@@ -3,8 +3,8 @@ package com.doyensec.ClientSidePathTraversal;
 import javax.swing.SwingWorker;
 
 public class CSPTScannerTask extends SwingWorker<String, Object> {
-    private ClientSidePathTraversal cspt = null;
-    private ClientSidePathTraversalForm csptForm = null;
+    private ClientSidePathTraversal cspt;
+    private ClientSidePathTraversalForm csptForm;
 
     int scanProxyTotal = 0;
     int scanProxyCurrent = 0;
@@ -16,51 +16,36 @@ public class CSPTScannerTask extends SwingWorker<String, Object> {
 
     public void initProgressSource() {
         this.scanProxyCurrent = 0;
-        if (csptForm != null) {
-            csptForm.initProgressSource();
-            updateProgressSource(0);
-            updateProgressReflection(0);
-        }
+        csptForm.initProgressSource();
+        updateProgressSource(0);
+        updateProgressReflection(0);
     }
 
     public void finishProgressSource() {
-        if (csptForm != null) {
-            csptForm.finishProgressSource();
-        }
+        csptForm.finishProgressSource();
     }
 
     public void updateProgressSource(int scanProxyCurrent) {
-        if (csptForm != null) {
-
-            csptForm.setProgressSource(100 * scanProxyCurrent / this.scanProxyTotal);
-        }
+        csptForm.setProgressSource(100 * scanProxyCurrent / this.scanProxyTotal);
     }
 
     public void initProgressReflection() {
         this.scanProxyCurrent = 0;
-        if (csptForm != null) {
-            csptForm.initProgressReflection();
-        }
+        csptForm.initProgressReflection();
     }
 
     public void finishProgressReflection() {
-        if (csptForm != null) {
-            csptForm.finishProgressReflection();
-        }
+        csptForm.finishProgressReflection();
     }
 
     public void updateProgressReflection(int scanProxyCurrent) {
-        if (csptForm != null) {
-
-            csptForm.setProgressReflection(100 * scanProxyCurrent / this.scanProxyTotal);
-        }
+        csptForm.setProgressReflection(100 * scanProxyCurrent / this.scanProxyTotal);
     }
 
     @Override
     protected String doInBackground() {
-
         // This will fill paramValueLookup with potentialSource
-        scanProxyTotal = cspt.getApi().proxy().history().size();
+        this.scanProxyTotal = cspt.getApi().proxy().history().size();
 
         initProgressSource();
         cspt.getApi().logging().logToOutput("Scan started");

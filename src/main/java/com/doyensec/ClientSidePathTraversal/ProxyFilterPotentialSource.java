@@ -15,7 +15,6 @@ import burp.api.montoya.proxy.ProxyHttpRequestResponse;
 
 public class ProxyFilterPotentialSource implements ProxyHistoryFilter {
 
-    MontoyaApi api;
     Pattern scope;
 
     int currentScan = 0;
@@ -25,10 +24,8 @@ public class ProxyFilterPotentialSource implements ProxyHistoryFilter {
 
     private Map<String, Set<PotentialSource>> paramValueLookup;
 
-    public ProxyFilterPotentialSource(MontoyaApi api, ClientSidePathTraversal cspt, CSPTScannerTask csptScannerTask) {
-        this.api = api;
+    public ProxyFilterPotentialSource(ClientSidePathTraversal cspt, CSPTScannerTask csptScannerTask) {
         this.cspt = cspt;
-
         this.scope = Pattern.compile(cspt.getSourceScope(), Pattern.CASE_INSENSITIVE);
 
         paramValueLookup = new HashMap<>();
@@ -40,12 +37,11 @@ public class ProxyFilterPotentialSource implements ProxyHistoryFilter {
 
     public Map<String, Set<PotentialSource>> getParamValueLookup() {
         return paramValueLookup;
-    }
+    } // TODO: WARNING this is never called!
 
     @Override
     public boolean matches(ProxyHttpRequestResponse requestResponse) {
-
-        this.currentScan = this.currentScan + 1;
+        this.currentScan += 1;
 
         if (lastScanUpdate + 100 < currentScan) {
             lastScanUpdate = currentScan;
@@ -60,7 +56,7 @@ public class ProxyFilterPotentialSource implements ProxyHistoryFilter {
         }
 
         // Avoid 4XX and 5XX page but we want to keep 3XX
-        if (httpResponse.statusCode() > 400) {
+        if (httpResponse.statusCode() >= 400) {
             return false;
         }
 
@@ -76,26 +72,20 @@ public class ProxyFilterPotentialSource implements ProxyHistoryFilter {
             return false;
         }
 
-        // Must match the soruce scope
-        if (!this.scope.matcher(httpRequest.url().toString()).find()) {
+        // Must match the source scope
+        if (!this.scope.matcher(httpRequest.url()).find()) {
             return false;
         }
 
-        boolean fitlered = false;
-        for (ParsedHttpParameter params : httpRequest.parameters()) {
-
-            // At least one Query Parameter
-            if (params.type() == HttpParameterType.URL) {
-
-                // Add new source to list if it is not a false positive
-                if (cspt.addNewSource(params.name(), params.value().toLowerCase(), httpRequest.url())) {
-                    fitlered = true;
-                }
-
+        boolean filtered = false;
+        for (ParsedHttpParameter params : httpRequest.parameters(HttpParameterType.URL)) {
+            // Add new source to list if it is not a false positive
+            if (cspt.addNewSource(params.name(), params.value().toLowerCase(), httpRequest.url())) {
+                filtered = true;
             }
         }
 
-        return fitlered;
+        return filtered;
     }
 
 }

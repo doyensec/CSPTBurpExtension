@@ -57,10 +57,15 @@ public class ClientSidePathTraversalForm {
     private JPanel canaryConf;
     private JProgressBar progressBarSource;
     private JProgressBar progressBarReflection;
+    private DefaultTableModel resultSourceTableModel = new DefaultTableModel(new String[]{"Param Name", "URL"}, 0);
+    private DefaultTableModel resultSinkTableModel = new DefaultTableModel(new String[]{"Method", "URL"}, 0);
+    private DefaultListModel<String> resultsListModel = new DefaultListModel<>();
 
     public ClientSidePathTraversalForm(ClientSidePathTraversal cspt) {
 
         $$$setupUI$$$();
+
+        // Set up buttons
         scanButton.addActionListener(e -> {
             // Save Storage
             saveConfiguration(cspt);
@@ -81,13 +86,43 @@ public class ClientSidePathTraversalForm {
             canaryTokenValue.setText(cspt.getCanary());
         });
 
-        copyCanaryValueButton.addActionListener(e -> Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(cspt.getCanary()), null));
+        copyCanaryValueButton.addActionListener(e ->
+                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(cspt.getCanary()), null)
+        );
 
         loadConfiguration(cspt);
 
         // Init results table
-        resultSourceTable.setModel(new DefaultTableModel(null, new String[]{"Param Name", "URL"}));
-        resultSinkTable.setModel(new DefaultTableModel(null, new String[]{"Method", "URL"}));
+        resultSourceTable.setModel(resultSourceTableModel);
+        resultSinkTable.setModel(resultSinkTableModel);
+        resultsList.setModel(resultsListModel);
+
+        // TODO: check if it's ok to only initialize these once
+        createContextualMenusSources(cspt);
+        createContextualMenusSinks(cspt);
+    }
+
+    public void loadConfiguration(ClientSidePathTraversal cspt) {
+        sourceScope.setText(cspt.getSourceScope());
+        sinkScope.setText(cspt.getSinkScope());
+
+        POSTCheckBox.setSelected(false);
+        PUTCheckBox.setSelected(false);
+        PATCHCheckBox.setSelected(false);
+        DELETECheckBox.setSelected(false);
+        GETCheckBox.setSelected(false);
+
+        canaryTokenValue.setText(cspt.getCanary());
+
+        for (String httpMethod : cspt.getSinkHTTPMethods()) {
+            switch (httpMethod) {
+                case "POST" -> POSTCheckBox.setSelected(true);
+                case "PUT" -> PUTCheckBox.setSelected(true);
+                case "PATCH" -> PATCHCheckBox.setSelected(true);
+                case "DELETE" -> DELETECheckBox.setSelected(true);
+                case "GET" -> GETCheckBox.setSelected(true);
+            }
+        }
     }
 
     public void saveConfiguration(ClientSidePathTraversal cspt) {
@@ -113,7 +148,6 @@ public class ClientSidePathTraversalForm {
         }
 
         cspt.setCanary(canaryTokenValue.getText());
-
         cspt.setSinkHTTPMethods(sinkHTTPMethods);
     }
 
@@ -143,36 +177,13 @@ public class ClientSidePathTraversalForm {
         progressBarReflection.setValue(100);
     }
 
-    public void loadConfiguration(ClientSidePathTraversal cspt) {
-        sourceScope.setText(cspt.getSourceScope());
-        sinkScope.setText(cspt.getSinkScope());
+    public void displayResults(
+            Map<String, Set<PotentialSource>> paramValueLookup,
+            Map<String, Set<PotentialSink>> pathLookup,
+            ClientSidePathTraversal cspt
+    ) {
 
-        POSTCheckBox.setSelected(false);
-        PUTCheckBox.setSelected(false);
-        PATCHCheckBox.setSelected(false);
-        DELETECheckBox.setSelected(false);
-        GETCheckBox.setSelected(false);
-
-        canaryTokenValue.setText(cspt.getCanary());
-
-        for (String httpMethod : cspt.getSinkHTTPMethods()) {
-            switch (httpMethod) {
-                case "POST" -> POSTCheckBox.setSelected(true);
-                case "PUT" -> PUTCheckBox.setSelected(true);
-                case "PATCH" -> PATCHCheckBox.setSelected(true);
-                case "DELETE" -> DELETECheckBox.setSelected(true);
-                case "GET" -> GETCheckBox.setSelected(true);
-            }
-
-        }
-
-    }
-
-    public void displayResults(Map<String, Set<PotentialSource>> paramValueLookup,
-                               Map<String, Set<PotentialSink>> pathLookup, ClientSidePathTraversal cspt) {
-
-        DefaultListModel<String> resultsListModel = new DefaultListModel<>();
-
+        resultsListModel.clear();
         for (String paramValue : pathLookup.keySet()) {
             resultsListModel.addElement(paramValue);
         }
@@ -181,55 +192,40 @@ public class ClientSidePathTraversalForm {
             resultsList.removeListSelectionListener(resultsList.getListSelectionListeners()[0]);
         }
 
-        resultsList.setModel(resultsListModel);
-
         resultsList.addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 displaySourcesAndSinks(paramValueLookup, pathLookup, resultsList.getSelectedValue());
-                createContextualMenusSources(cspt);
-                createContextualMenusSinks(cspt);
+                // TODO: check if it's ok to only initialize these once
+                //createContextualMenusSources(cspt);
+                //createContextualMenusSinks(cspt);
             }
         });
     }
 
-    public void displaySourcesAndSinks(Map<String, Set<PotentialSource>> paramValueLookup,
-                                       Map<String, Set<PotentialSink>> pathLookup, String paramValue) {
+    public void displaySourcesAndSinks(
+            Map<String, Set<PotentialSource>> paramValueLookup,
+            Map<String, Set<PotentialSink>> pathLookup,
+            String paramValue
+    ) {
         displaySources(paramValueLookup, paramValue);
         displaySinks(pathLookup, paramValue);
 
         resultSourceTable.updateUI();
         resultSinkTable.updateUI();
-
     }
 
     public void displaySources(Map<String, Set<PotentialSource>> paramValueLookup, String paramValue) {
-        Object[][] arr = new Object[paramValueLookup.get(paramValue).size()][2];
-
-        int i = 0;
-
+        resultSourceTableModel.setRowCount(0); // Clear the table
         for (PotentialSource source : paramValueLookup.get(paramValue)) {
-            // param Value at the position 0
-            arr[i][0] = source.paramName;
-            arr[i][1] = source.sourceURL;
-            i++;
+            resultSourceTableModel.addRow(new String[]{source.paramName, source.sourceURL});
         }
-
-        resultSourceTable.setModel(new DefaultTableModel(arr, new String[]{"Param Name", "URL"}));
     }
 
     public void displaySinks(Map<String, Set<PotentialSink>> pathLookup, String paramValue) {
-        Object[][] arr = new Object[pathLookup.get(paramValue).size()][2];
-
-        int i = 0;
-
+        resultSinkTableModel.setRowCount(0); // Clear the table
         for (PotentialSink sink : pathLookup.get(paramValue)) {
-            arr[i][0] = sink.method;
-            arr[i][1] = sink.url;
-            i++;
+            resultSinkTableModel.addRow(new String[]{sink.method, sink.url});
         }
-
-        resultSinkTable.setModel(new DefaultTableModel(arr, new String[]{"Method", "URL"}));
-
     }
 
     private void createContextualMenusSinks(ClientSidePathTraversal cspt) {
@@ -294,7 +290,6 @@ public class ClientSidePathTraversalForm {
                 if (e.isPopupTrigger() && e.getComponent() instanceof JTable) {
                     popupMenu.show(e.getComponent(), e.getX(), e.getY());
                 }
-
             }
         });
 

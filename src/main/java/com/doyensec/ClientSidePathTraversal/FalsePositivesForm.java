@@ -27,17 +27,18 @@ public class FalsePositivesForm {
 
     public FalsePositivesForm(ClientSidePathTraversal cspt) {
         $$$setupUI$$$();
+        falsePositivesTable.setModel(model);
+        createContextualMenus(cspt);
         display(cspt);
     }
 
     public void display(ClientSidePathTraversal cspt) {
-        falsePositivesTable.setModel(model);
         displayTable(cspt.getFalsePositivesList());
-        createContextualMenus(cspt);
     }
 
     private void displayTable(Map<String, Set<String>> falsePositivesList) {
         assert falsePositivesList != null;
+        model.setRowCount(0); // Clears all rows
         for (var paramName : falsePositivesList.keySet()) {
             for (var url : falsePositivesList.get(paramName)) {
                 model.addRow(new String[]{paramName, url});
